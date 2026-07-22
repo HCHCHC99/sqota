@@ -1,0 +1,1 @@
+#ifndef __HW_TIM_DRIVER_H#define __HW_TIM_DRIVER_H#include <stdint.h>#include <stdbool.h>/** * @brief 初始化指定硬件定时器，配置中断周期ms * @param tim_idx 硬件TIM编号 0/1/2/3... * @param tick_ms 中断周期ms * @retval true成功 */bool HW_TIM_Init(uint8_t tim_idx, uint16_t tick_ms);#endif

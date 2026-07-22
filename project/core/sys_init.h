@@ -1,0 +1,1 @@
+#ifndef __SYS_INIT_H#define __SYS_INIT_H// 系统总初始化void System_Init(void);// 注册默认系统模块void System_RegisterDefaultModules(void);#endif

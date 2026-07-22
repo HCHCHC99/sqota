@@ -1,0 +1,1 @@
+/** * @file sensor_pot.h * @brief 电位计位置传感器 */#ifndef __SENSOR_POT_H#define __SENSOR_POT_H#include "position_sensor.h"extern const PosSensorOps_t PotOps;#endif /* __SENSOR_POT_H */
