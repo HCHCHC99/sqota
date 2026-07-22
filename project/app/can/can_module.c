@@ -1,17 +1,53 @@
-/** ÎÄ¼ş°üº¬ **/
+/**
+ * @file    can_module.c
+ * @brief   CAN ç¡¬ä»¶æŠ½è±¡å±‚ (HAL) â€” ç¡¬ä»¶å®ç°
+ * @note    æ–°å¢ TX å®Œæˆå›è°ƒã€ç»Ÿä¸€ä¸­æ–­å¤„ç† (can_module_irq_handler)
+ */
+
+/** æ–‡ä»¶åŒ…å« **/
 #include "can_module.h"
+#include <string.h>
+#include <stdbool.h>
 
+/*==============================================================================
+ * æ¨¡å—é™æ€å˜é‡
+ *============================================================================*/
 
-/** ÄÚ²¿ -- GPIO³õÊ¼»¯ **/
+/* TX å®Œæˆå›è°ƒå‡½æ•° */
+static can_tx_callback_t m_pfnTxCallback = NULL;
+
+/* TX ç¡¬ä»¶å¿™ç¢Œæ ‡å¿— */
+static volatile bool m_bTxBusy = false;
+
+/* RX ç¼“å­˜æŒ‡é’ˆ (ç”¨äºä¸­æ–­ä¸­å¿«é€Ÿè®¿é—®) */
+static can_rx_cache_t *m_pRxCache = NULL;
+
+/*==============================================================================
+ * å†…éƒ¨å‡½æ•°å£°æ˜
+ *============================================================================*/
+
+static void can_gpio_init(const can_gpio_t *gpio);
+static void can_cfg_bdr_init(can_bdr_t can_bdr, const can_bittime_t *bit_time,
+                             stc_can_bit_time_config_t *stcBitCfg);
+static void can_cfg_init(CM_CAN_TypeDef *CANx, const can_cfg_t *cfg);
+static void can_int_cfg(CM_CAN_TypeDef *CANx, const uint32_t int_type,
+                        const can_int_t *can_int);
+
+/*==============================================================================
+ * å†…éƒ¨å‡½æ•°å®ç°
+ *============================================================================*/
+
+/** å†…éƒ¨ -- GPIOåˆå§‹åŒ– */
 static void can_gpio_init(const can_gpio_t *gpio)
 {
-	if (gpio == NULL) return;
-	
-    GPIO_SetFunc(gpio->port, gpio->pin, gpio->func);   
+    if (gpio == NULL) return;
+
+    GPIO_SetFunc(gpio->port, gpio->pin, gpio->func);
 }
 
-/** ÄÚ²¿ -- ²¨ÌØÂÊ **/
-static void can_cfg_bdr_init(can_bdr_t can_bdr,const can_bittime_t *bit_time, stc_can_bit_time_config_t *stcBitCfg)
+/** å†…éƒ¨ -- æ³¢ç‰¹ç‡ */
+static void can_cfg_bdr_init(can_bdr_t can_bdr, const can_bittime_t *bit_time,
+                             stc_can_bit_time_config_t *stcBitCfg)
 {
     if (stcBitCfg == NULL) return;
 
@@ -23,241 +59,340 @@ static void can_cfg_bdr_init(can_bdr_t can_bdr,const can_bittime_t *bit_time, st
         stcBitCfg->u32SJW       = bit_time->sjw;
     }
     else if (CAN_BDR_250K == can_bdr) {
-		stcBitCfg->u32Prescaler = 4U;
-		stcBitCfg->u32TimeSeg1  = 6U;
-		stcBitCfg->u32TimeSeg2  = 2U;
-		stcBitCfg->u32SJW       = 2U;
-		
+        stcBitCfg->u32Prescaler = 4U;
+        stcBitCfg->u32TimeSeg1  = 6U;
+        stcBitCfg->u32TimeSeg2  = 2U;
+        stcBitCfg->u32SJW       = 2U;
+
     }
     else if (CAN_BDR_500K == can_bdr) {
-		stcBitCfg->u32Prescaler = 2U;
-		stcBitCfg->u32TimeSeg1  = 6U;
-		stcBitCfg->u32TimeSeg2  = 2U;
-		stcBitCfg->u32SJW       = 2U;
+        stcBitCfg->u32Prescaler = 2U;
+        stcBitCfg->u32TimeSeg1  = 6U;
+        stcBitCfg->u32TimeSeg2  = 2U;
+        stcBitCfg->u32SJW       = 2U;
     }
     else if (CAN_BDR_1M == can_bdr) {
-		stcBitCfg->u32Prescaler = 1U;
-		stcBitCfg->u32TimeSeg1  = 6U;
-		stcBitCfg->u32TimeSeg2  = 2U;
-		stcBitCfg->u32SJW       = 2U;
+        stcBitCfg->u32Prescaler = 1U;
+        stcBitCfg->u32TimeSeg1  = 6U;
+        stcBitCfg->u32TimeSeg2  = 2U;
+        stcBitCfg->u32SJW       = 2U;
     }
 }
 
-/** ÄÚ²¿ -- can»ù´¡ÅäÖÃ **/
+/** å†…éƒ¨ -- canæ§åˆ¶å™¨é…ç½® */
 static void can_cfg_init(CM_CAN_TypeDef *CANx, const can_cfg_t *cfg)
 {
-	stc_can_init_t stcCanInit;
-		
+    stc_can_init_t stcCanInit;
+
     /* Enable peripheral clock of CAN. */
     FCG_Fcg1PeriphClockCmd(FCG1_PERIPH_CAN, ENABLE);
-	/* Initializes CAN. */
+    /* Initializes CAN. */
     (void)CAN_StructInit(&stcCanInit);
-	
-	stc_can_filter_config_t astcFilter[1] = {
+
+    stc_can_filter_config_t astcFilter[1] = {
         {0UL, 0x18FFFFFFUL, CAN_ID_STD_EXT}
-		
+
     };
-	
-	//²¨ÌØÂÊ
-	can_cfg_bdr_init(cfg->can_bdr, &cfg->bit_time, &stcCanInit.stcBitCfg);
-	
-	//mode
+
+    // æ³¢ç‰¹ç‡
+    can_cfg_bdr_init(cfg->can_bdr, &cfg->bit_time, &stcCanInit.stcBitCfg);
+
+    // mode
     stcCanInit.u8WorkMode             = cfg->work_mode;
-	
-	//
-	stcCanInit.u16FilterSelect		  = CAN_FILTER1;
-	stcCanInit.pstcFilter 			  = astcFilter;
-	//tx
+
+    // æ»¤æ³¢å™¨
+    stcCanInit.u16FilterSelect        = CAN_FILTER1;
+    stcCanInit.pstcFilter             = astcFilter;
+    // tx
     stcCanInit.u8PTBSingleShotTx      = cfg->can_tx_cfg.en_ptb_single_shot;
     stcCanInit.u8STBSingleShotTx      = cfg->can_tx_cfg.en_stb_single_shot;
     stcCanInit.u8STBPrioMode          = cfg->can_tx_cfg.en_stb_prio_md;
-	//rx
+    // rx
     stcCanInit.u8RxWarnLimit          = cfg->can_rx_cfg.rx_warn_lmt;
     stcCanInit.u8ErrorWarnLimit       = cfg->can_rx_cfg.err_warn_lmt;
-    stcCanInit.u8RxAllFrame           = cfg->can_rx_cfg.rx_all_frame; 
+    stcCanInit.u8RxAllFrame           = cfg->can_rx_cfg.rx_all_frame;
     stcCanInit.u8RxOvfMode            = cfg->can_rx_cfg.rx_ovf_mode;
-	stcCanInit.u8SelfAck			  = cfg->can_rx_cfg.self_ack;
-	//ÂË²¨Æ÷
+    stcCanInit.u8SelfAck              = cfg->can_rx_cfg.self_ack;
 
-//	stcCanInit.pstcFilter->u32ID	  = cfg->can_filter.id;
-//	stcCanInit.pstcFilter->u32IDMask  = cfg->can_filter.id_mask;
-//	stcCanInit.pstcFilter->u32IDType  = cfg->can_filter.id_type;
-
-	
     (void)CAN_Init(CANx, &stcCanInit);
-	
-	//ÂË²¨Æ÷Ê¹ÄÜ
-//	CAN_FilterCmd(CANx, cfg->can_filter.id_type, (en_functional_state_t)cfg->en_can_filte);
-	
 }
 
-/** ÄÚ²¿ -- ÖĞ¶ÏÅäÖÃ£¨ADC Ä£¿é¿ÉÒÔ²úÉúÒÔÏÂÊÂ¼şÊä³ö£¬Ä¿Ç°½ö¿¼ÂÇĞòÁĞA/BÉ¨Ãè½áÊøÊÂ¼ş£© **/
-static void can_int_cfg(CM_CAN_TypeDef *CANx, const uint32_t int_type,  const can_int_t *can_int)
-{	
-	stc_irq_signin_config_t stcIrq;
-	
-	if (can_int == NULL) return;
-	if (0 == int_type) return;
-	
-	if (CANx == CM_CAN)	
-	{
-		/* IRQ sign-in */
-		stcIrq.enIntSrc = INT_SRC_CAN_INT;//Ö»ÓĞÕâÒ»¸ö
-		stcIrq.enIRQn = can_int->can_int_irqn;
-		stcIrq.pfnCallback = can_int->can_int_callback;
-		(void)INTC_IrqSignIn(&stcIrq);
-		
-		/* NVIC config */
-		NVIC_ClearPendingIRQ(can_int->can_int_irqn);
-		NVIC_SetPriority(can_int->can_int_irqn, can_int->can_int_pri);
-		NVIC_EnableIRQ(can_int->can_int_irqn);
-		
-		CAN_IntCmd(CANx, CAN_INT_ALL, DISABLE);
-		CAN_IntCmd(CANx, int_type, ENABLE);	
-	}
-	
+/** å†…éƒ¨ -- ä¸­æ–­é…ç½® */
+static void can_int_cfg(CM_CAN_TypeDef *CANx, const uint32_t int_type,
+                        const can_int_t *can_int)
+{
+    stc_irq_signin_config_t stcIrq;
+
+    if (can_int == NULL) return;
+    if (0 == int_type) return;
+
+    if (CANx == CM_CAN)
+    {
+        /* IRQ sign-in */
+        stcIrq.enIntSrc = INT_SRC_CAN_INT;
+        stcIrq.enIRQn = can_int->can_int_irqn;
+        stcIrq.pfnCallback = can_int->can_int_callback;
+        (void)INTC_IrqSignIn(&stcIrq);
+
+        /* NVIC config */
+        NVIC_ClearPendingIRQ(can_int->can_int_irqn);
+        NVIC_SetPriority(can_int->can_int_irqn, can_int->can_int_pri);
+        NVIC_EnableIRQ(can_int->can_int_irqn);
+
+        CAN_IntCmd(CANx, CAN_INT_ALL, DISABLE);
+        CAN_IntCmd(CANx, int_type, ENABLE);
+    }
 }
 
-/** Íâ²¿ -- CANÄ£¿é³õÊ¼»¯ **/
+/*==============================================================================
+ * å…¬å…± API - åˆå§‹åŒ–å’Œæ”¶å‘
+ *============================================================================*/
+
+/** å¤–éƒ¨ -- CANæ¨¡å—åˆå§‹åŒ– */
 int32_t can_module_init(can_handle_t *handle, const can_cfg_t *cfg)
-{     
-	if (handle == NULL || cfg == NULL) return -1;
-	
-	// ¸´ÖÆÅäÖÃ
-	handle->cfg_hw = cfg;
-	
+{
+    if (handle == NULL || cfg == NULL) return -1;
+
+    /* ä¿å­˜ RX ç¼“å­˜æŒ‡é’ˆ (ä¾›ä¸­æ–­ä¸­å¿«é€Ÿè®¿é—®) */
+    m_pRxCache = &handle->can_rx;
+
+    /* ä¿å­˜é…ç½® */
+    handle->cfg_hw = cfg;
+
     handle->initialized = 0;
 
-	/*GPIO³õÊ¼»¯*/
+    /* æ¸…é›¶ RX ç¼“å­˜ */
+    memset(&handle->can_rx, 0, sizeof(can_rx_cache_t));
+
+    /*GPIOåˆå§‹åŒ–*/
     can_gpio_init(&cfg->gpio_tx);
     can_gpio_init(&cfg->gpio_rx);
 
-	/*ÅäÖÃ³õÊ¼»¯*/
-	can_cfg_init(handle->cfg_hw->CANx, handle->cfg_hw);
-	
-	/*ÖĞ¶ÏÅäÖÃ*/
+    /*æ§åˆ¶å™¨åˆå§‹åŒ–*/
+    can_cfg_init(handle->cfg_hw->CANx, handle->cfg_hw);
+
+    /*ä¸­æ–­é…ç½® (ä½¿ç”¨ can_module_irq_handler ç»Ÿä¸€å¤„ç†) */
     can_int_cfg(handle->cfg_hw->CANx, handle->cfg_hw->can_int_type, &handle->cfg_hw->can_int);
 
-	handle->initialized = 1;
+    handle->initialized = 1;
     return CAN_RET_OK;
 }
 
+/*==============================================================================
+ * æ‰©å±• API â€” TX å›è°ƒ + å¿™ç¢ŒæŸ¥è¯¢
+ *============================================================================*/
 
-//can·¢ËÍ--±ê×¼Ö¡
+/** æ³¨å†Œ TX å®Œæˆå›è°ƒ */
+void can_register_tx_callback(can_tx_callback_t pfnCallback)
+{
+    m_pfnTxCallback = pfnCallback;
+}
+
+/** æŸ¥è¯¢ TX ç¡¬ä»¶å¿™ç¢Œ */
+bool can_is_tx_busy(void)
+{
+    return m_bTxBusy;
+}
+
+/*==============================================================================
+ * å‘é€ API
+ *============================================================================*/
+
+// canå‘é€--æ ‡å‡†å¸§
 int8_t can_transmit_std(uint32_t id, uint8_t* pData, uint8_t Len)
 {
-	if (Len > 8)
-	{
-		return CAN_RET_ERR_PARAM;
-	}
-	
-	stc_can_tx_frame_t tx;
-	tx.u32Ctrl = 0x0UL;//ÇåÁã£¬²»ÇåÓĞÎÊÌâ
-	tx.u32ID = id;
-	tx.RTR = 0;
-	tx.IDE = 0;
-	tx.DLC = Len;
-	
-	for(uint8_t i=0; i<Len; i++)
-	{
-		tx.au8Data[i] = *pData;
-		pData++;
-	}	
-	
-	CAN_FillTxFrame(CM_CAN, CAN_TX_BUF_PTB, &tx);
-	CAN_StartTx(CM_CAN, CAN_TX_REQ_PTB);
-	 
-	return CAN_RET_OK;
+    if (Len > 8)
+    {
+        return CAN_RET_ERR_PARAM;
+    }
+
+    stc_can_tx_frame_t tx;
+    tx.u32Ctrl = 0x0UL;         // æ¸…é›¶ï¼Œä¸ä½¿ç”¨æ§åˆ¶ä½
+    tx.u32ID = id;
+    tx.RTR = 0;
+    tx.IDE = 0;
+    tx.DLC = Len;
+
+    for(uint8_t i=0; i<Len; i++)
+    {
+        tx.au8Data[i] = *pData;
+        pData++;
+    }
+
+    CAN_FillTxFrame(CM_CAN, CAN_TX_BUF_PTB, &tx);
+    CAN_StartTx(CM_CAN, CAN_TX_REQ_PTB);
+    m_bTxBusy = true;
+
+    return CAN_RET_OK;
 }
 
-//can·¢ËÍ--À©Õ¹Ö¡
+// canå‘é€--æ‰©å±•å¸§
 int8_t can_transmit_ext(uint32_t id, uint8_t* pData, uint8_t Len)
 {
-	if (Len > 8)
-	{
-		return CAN_RET_ERR_PARAM;
-	}
-	
-	stc_can_tx_frame_t tx;
-	tx.u32Ctrl = 0x0UL;//ÇåÁã£¬²»ÇåÓĞÎÊÌâ
-	tx.u32ID = id;
-	tx.RTR = 0;//1£ºÒ£¿ØÖ¡  0£ºÊı¾İÖ¡
-	tx.IDE = 1;//1£ºÀ©Õ¹Ö¡  0£º±ê×¼Ö¡
-	tx.DLC = Len;
-	
-	for(uint8_t i=0; i<Len; i++)
-	{
-		tx.au8Data[i] = *pData;
-		pData++;
-	}	
-	
-	CAN_FillTxFrame(CM_CAN, CAN_TX_BUF_PTB, &tx);
-	CAN_StartTx(CM_CAN, CAN_TX_REQ_PTB);
-	 
-	return CAN_RET_OK;
+    if (Len > 8)
+    {
+        return CAN_RET_ERR_PARAM;
+    }
+
+    stc_can_tx_frame_t tx;
+    tx.u32Ctrl = 0x0UL;         // æ¸…é›¶ï¼Œä¸ä½¿ç”¨æ§åˆ¶ä½
+    tx.u32ID = id;
+    tx.RTR = 0;                 // 1=é¥æ§å¸§  0=æ•°æ®å¸§
+    tx.IDE = 1;                 // 1=æ‰©å±•å¸§  0=æ ‡å‡†å¸§
+    tx.DLC = Len;
+
+    for(uint8_t i=0; i<Len; i++)
+    {
+        tx.au8Data[i] = *pData;
+        pData++;
+    }
+
+    CAN_FillTxFrame(CM_CAN, CAN_TX_BUF_PTB, &tx);
+    CAN_StartTx(CM_CAN, CAN_TX_REQ_PTB);
+    m_bTxBusy = true;
+
+    return CAN_RET_OK;
 }
 
+/*==============================================================================
+ * æ¥æ”¶ API
+ *============================================================================*/
 
 /**
- * @brief ½«Ò»Ö¡ CAN Êı¾İ·ÅÈë½ÓÊÕ»º´æ£¨»·ĞÎ FIFO£©
- * @param [in] pstcCache ½ÓÊÕ»º´æÖ¸Õë
- * @param [in] pstcFrame ´ı´æÈëµÄÖ¡Ö¸Õë
- * @retval CAN_RET_OK ³É¹¦
- * @retval CAN_RET_ERR_INVD_PARAM ²ÎÊı´íÎó
+ * @brief å°†ä¸€å¸§ CAN æ•°æ®æ”¾å…¥ç¯å½¢ç¼“å­˜ï¼ˆå°¾éƒ¨ FIFOï¼‰
+ * @param [in] pstcCache ç¯å½¢ç¼“å­˜æŒ‡é’ˆ
+ * @param [in] pstcFrame è¦å­˜å…¥çš„å¸§æŒ‡é’ˆ
+ * @retval CAN_RET_OK æˆåŠŸ
+ * @retval CAN_RET_ERR_PARAM å‚æ•°æ— æ•ˆ
  */
 int8_t can_rx_cache_put(can_rx_cache_t *pstcCache, const stc_can_rx_frame_t *pstcFrame)
 {
     if (pstcCache == NULL || pstcFrame == NULL) {
         return CAN_RET_ERR_PARAM;
     }
-    
-    // ´æÈëĞÂÖ¡
+
+    // å†™å…¥å¸§
     pstcCache->rx_frame[pstcCache->write_idx] = *pstcFrame;
     pstcCache->write_idx = (pstcCache->write_idx + 1) % CAN_RX_BUF_SIZE;
-    
+
     if (pstcCache->cnt < CAN_RX_BUF_SIZE) {
         pstcCache->cnt++;
     } else {
-        // »º´æÒÑÂú£¬¸²¸Ç×î¾ÉÖ¡£¬¶ÁÖ¸ÕëĞèÒªÍ¬²½Ç°½ø
+        // ç¼“å†²åŒºæ»¡ï¼Œä¸¢å¼ƒæœ€æ—§å¸§ï¼Œè¯»æŒ‡é’ˆéœ€è¦åŒæ­¥å‰ç§»
         pstcCache->read_idx = (pstcCache->read_idx + 1) % CAN_RX_BUF_SIZE;
     }
-    
+
     return CAN_RET_OK;
 }
 
 /**
- * @brief ´Ó½ÓÊÕ»º´æÖĞ¶ÁÈ¡Ò»Ö¡£¨ÏÈ½øÏÈ³ö£¬¶ÁºóÒÆ³ı£©
- * @param [in]  pstcCache ½ÓÊÕ»º´æÖ¸Õë
- * @param [out] pstcFrame ´æ·Å¶ÁÈ¡Ö¡µÄÖ¸Õë
- * @retval CAN_RET_OK ³É¹¦
- * @retval CAN_RET_ERR_NODATA »º´æÎª¿Õ
- * @retval CAN_RET_ERR_INVD_PARAM ²ÎÊı´íÎó
+ * @brief ä»æ¥æ”¶ç¼“å­˜è¯»å–ä¸€å¸§ï¼ˆå…ˆå…¥å…ˆå‡ºï¼‰ï¼Œè¯»å–åç§»é™¤
+ * @param [in]  pstcCache æ¥æ”¶ç¼“å­˜æŒ‡é’ˆ
+ * @param [out] pstcFrame å­˜æ”¾è¯»å–å¸§çš„æŒ‡é’ˆ
+ * @retval CAN_RET_OK æˆåŠŸ
+ * @retval CAN_RET_ERR_NODATA ç¼“å­˜ä¸ºç©º
+ * @retval CAN_RET_ERR_PARAM å‚æ•°æ— æ•ˆ
  */
 int8_t can_read(can_rx_cache_t *pstcCache, stc_can_rx_frame_t *pstcFrame)
 {
     if (pstcCache == NULL || pstcFrame == NULL) {
         return CAN_RET_ERR_PARAM;
     }
-    
+
     if (pstcCache->cnt == 0) {
         return CAN_RET_ERR_NODATA;
     }
-    
+
     *pstcFrame = pstcCache->rx_frame[pstcCache->read_idx];
     pstcCache->read_idx = (pstcCache->read_idx + 1) % CAN_RX_BUF_SIZE;
     pstcCache->cnt--;
-    
+
     return CAN_RET_OK;
 }
 
-//can½ÓÊÕ-- ÂÖÑµ·½Ê½¿ÉÒÔ·ÅÖ÷Ñ­»·Àï
+// canè½®è¯¢-- è½®è¯¢å¼æ¥æ”¶ï¼ˆä¸»å¾ªç¯ä¸­è°ƒç”¨ï¼‰
 void can_receive_poll(can_rx_cache_t *rx)
 {
-        stc_can_rx_frame_t frame;
+    stc_can_rx_frame_t frame;
     while (CAN_GetRxFrame(CM_CAN, &frame) == LL_OK) {
         can_rx_cache_put(rx, &frame);
-		}
+    }
 }
 
+/*==============================================================================
+ * ä¸­æ–­å¤„ç† (ç»Ÿä¸€å…¥å£, æ³¨å†Œåˆ°ä¸­æ–­æ§åˆ¶å™¨)
+ *============================================================================*/
 
+/**
+ * @brief CAN ä¸­æ–­ç»Ÿä¸€å¤„ç†å‡½æ•°
+ * @note  åœ¨ CAN ä¸­æ–­ä¸Šä¸‹æ–‡ä¸­è°ƒç”¨ï¼Œå¤„ç† RX æ¥æ”¶ã€TX å®Œæˆã€é”™è¯¯/Bus-Off æ¢å¤
+ *        æ­¤å‡½æ•°æ›¿ä»£äº†åŸå…ˆåˆ†æ•£åœ¨ app_can.c ä¸­çš„åº”ç”¨å±‚ ISR
+ */
+void can_module_irq_handler(void)
+{
+    CM_CAN_TypeDef *CANx = CM_CAN;
+    uint32_t status = 0;
 
+    /* æ¥æ”¶ä¸­æ–­: å°†ç¡¬ä»¶ FIFO ä¸­æ‰€æœ‰å¸§å–å‡ºæ”¾å…¥è½¯ä»¶ç¼“å­˜ */
+    if (CAN_GetStatus(CANx, CAN_FLAG_RX) == SET) {
+        status |= CAN_FLAG_RX;
+        stc_can_rx_frame_t frame;
+        while (CAN_GetRxBufStatus(CANx) != CAN_RX_BUF_EMPTY) {
+            while (CAN_GetRxFrame(CM_CAN, &frame) == LL_OK)
+            {
+                if (m_pRxCache != NULL) {
+                    can_rx_cache_put(m_pRxCache, &frame);
+                }
+            }
+        }
+    }
+
+    /* æ¥æ”¶æº¢å‡º */
+    if (CAN_GetStatus(CANx, CAN_FLAG_RX_OVERRUN) == SET) {
+        status |= CAN_FLAG_RX_OVERRUN;
+    }
+
+    /* æ¥æ”¶ç¼“å†²æ»¡å‘Šè­¦ */
+    if (CAN_GetStatus(CANx, CAN_FLAG_RX_BUF_FULL) == SET) {
+        status |= CAN_FLAG_RX_BUF_FULL;
+    }
+
+    /* æ¥æ”¶ç¼“å†²è­¦å‘Š */
+    if (CAN_GetStatus(CANx, CAN_FLAG_RX_BUF_WARN) == SET) {
+        status |= CAN_FLAG_RX_BUF_WARN;
+    }
+
+    /* PTB å‘é€å®Œæˆ */
+    if (CAN_GetStatus(CANx, CAN_FLAG_PTB_TX) == SET) {
+        status |= CAN_FLAG_PTB_TX;
+        m_bTxBusy = false;
+        if (m_pfnTxCallback != NULL) {
+            m_pfnTxCallback();
+        }
+    }
+
+    /* STB å‘é€å®Œæˆ */
+    if (CAN_GetStatus(CANx, CAN_FLAG_STB_TX) == SET) {
+        status |= CAN_FLAG_STB_TX;
+    }
+
+    /* é”™è¯¯ä¸­æ–­ / Bus-Off */
+    if (CAN_GetStatus(CANx, CAN_FLAG_ERR_INT) == SET) {
+        if (CAN_GetStatus(CANx, CAN_FLAG_BUS_OFF) == SET)
+        {
+            CAN_ExitLocalReset(CANx);
+            status |= CAN_FLAG_BUS_OFF;
+        }
+        status |= CAN_FLAG_ERR_INT;
+    }
+
+    /* æ€»çº¿é”™è¯¯ */
+    if (CAN_GetStatus(CANx, CAN_FLAG_BUS_ERR) == SET) {
+        status |= CAN_FLAG_BUS_ERR;
+    }
+
+    /* æ¸…é™¤æ‰€æœ‰å·²å¤„ç†çš„ä¸­æ–­æ ‡å¿— */
+    if (status != 0) {
+        CAN_ClearStatus(CANx, status);
+    }
+}

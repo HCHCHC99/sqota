@@ -11,6 +11,7 @@
 
 #include "hc32_ll.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -222,6 +223,31 @@ int8_t  can_read(can_rx_cache_t *pstcCache, stc_can_rx_frame_t *pstcFrame);
 
 /** 轮询接收：将硬件 RX FIFO 中所有帧取出放入缓存 */
 void    can_receive_poll(can_rx_cache_t *rx);
+
+/*==============================================================================
+ * 扩展 API — TX 完成回调 + 统一中断处理
+ *============================================================================*/
+
+/** TX 完成回调函数类型 */
+typedef void (*can_tx_callback_t)(void);
+
+/**
+ * @brief 注册 TX 完成回调（在中断上下文中调用）
+ * @param pfnCallback 回调函数指针
+ */
+void can_register_tx_callback(can_tx_callback_t pfnCallback);
+
+/**
+ * @brief 查询 TX 硬件忙碌状态
+ * @return true=硬件正在发送, false=空闲
+ */
+bool can_is_tx_busy(void);
+
+/**
+ * @brief CAN 中断统一处理函数（注册到中断控制器）
+ * @note  处理 RX 接收、TX 完成、错误/Bus-Off 恢复
+ */
+void can_module_irq_handler(void);
 
 #ifdef __cplusplus
 }

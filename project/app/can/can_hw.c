@@ -1,1 +1,50 @@
-/** * @file    can_hw.c * @brief   CAN ”≤º˛≥ÈœÛ≤„£®’ºŒª µœ÷£© * * ∏√Œƒº˛Ã·π©¡À“ª–©’Î∂‘ CAN ”≤º˛µƒºÚµ•∑‚◊∞∫Õ’ºŒª∫Ø ˝£¨ * ±„”⁄…œ≤„ƒ£øÈ£®»Á `app_can.c`£©‘⁄–Ë“™ ±µ˜”√ªÚÃÊªªŒ™’Ê µ µœ÷°£ */#include "can_module.h"#include "app_can.h"/* ”≤º˛≈‰÷√£®”Î÷Æ«∞‘⁄ app_can.c ÷–µƒ cfg_can ±£≥÷“ª÷¬£© */const can_cfg_t CAN_HW = {    .can_ins            = CAN1,    .CANx               = CM_CAN,    .can_bdr            = CAN_BDR_250K,    .work_mode          = CAN_WORK_MD_NORMAL,        .en_can_rx          = CAN_FUNC_ENABLE,    .gpio_rx            = {        .port               = GPIO_PORT_B,        .pin                = GPIO_PIN_14,        .func               = GPIO_FUNC_51,    },    .can_rx_cfg         = {        .rx_warn_lmt        = 8U,        .err_warn_lmt       = 10U,        .rx_all_frame       = CAN_RX_ALL_FRAME_DISABLE,        .rx_ovf_mode        = CAN_RX_OVF_SAVE_NEW,        .self_ack           = CAN_SELF_ACK_ENABLE,    },        .en_can_tx          = CAN_FUNC_ENABLE,    .gpio_tx            = {        .port               = GPIO_PORT_B,        .pin                = GPIO_PIN_15,        .func               = GPIO_FUNC_50,    },    .can_tx_cfg         = {        .en_ptb_single_shot = CAN_PTB_SINGLESHOT_TX_ENABLE,        .en_stb_single_shot = CAN_STB_SINGLESHOT_TX_DISABLE,        .en_stb_prio_md     = CAN_STB_PRIO_MD_DISABLE,    },    .can_int_type       = (CAN_INT_RX | CAN_INT_RX_OVERRUN | CAN_INT_RX_BUF_FULL | CAN_INT_RX_BUF_WARN | CAN_INT_ERR_INT),    .can_int            = {        .can_int_irqn      = INT002_IRQn,        .can_int_pri       = DDL_IRQ_PRIO_07,        .can_int_callback  = app_can_int_callback,    },};
+/**
+ * @file    can_hw.c
+ * @brief   CAN Á°¨‰ª∂ÈÖçÁΩÆÔºàÂç†‰ΩçÂÆûÁé∞Ôºâ
+ *
+ * Êú¨Êñá‰ª∂Êèê‰æõ‰∫Ü‰∏Ä‰∫õÂØπ CAN Á°¨‰ª∂ÁöÑÁÆÄÂçïÂ∞ÅË£ÖÂç†‰ΩçÂáΩÊï∞„ÄÇ
+ * ‰æõ‰∏äÂ±ÇÊ®°ÂùóÔºàÂ¶Ç `app_can.c`ÔºâÂú®ÈúÄË¶ÅÊó∂Áî±Áî®Êà∑ÊõøÊç¢‰∏∫ÁúüÂÆûÂÆûÁé∞„ÄÇ
+ */
+
+#include "can_module.h"
+
+
+/* Á°¨‰ª∂ÈÖçÁΩÆÔºå‰∏é‰πãÂâçÁöÑ app_can.c ‰∏≠ÁöÑ cfg_can ‰øùÊåÅ‰∏ÄËá¥ */
+const can_cfg_t CAN_HW = {
+    .can_ins            = CAN1,
+    .CANx               = CM_CAN,
+    .can_bdr            = CAN_BDR_250K,
+    .work_mode          = CAN_WORK_MD_NORMAL,
+
+    .en_can_rx          = CAN_FUNC_ENABLE,
+    .gpio_rx            = {
+        .port               = GPIO_PORT_B,
+        .pin                = GPIO_PIN_14,
+        .func               = GPIO_FUNC_51,
+    },
+    .can_rx_cfg         = {
+        .rx_warn_lmt        = 8U,
+        .err_warn_lmt       = 10U,
+        .rx_all_frame       = CAN_RX_ALL_FRAME_DISABLE,
+        .rx_ovf_mode        = CAN_RX_OVF_SAVE_NEW,
+        .self_ack           = CAN_SELF_ACK_ENABLE,
+    },
+
+    .en_can_tx          = CAN_FUNC_ENABLE,
+    .gpio_tx            = {
+        .port               = GPIO_PORT_B,
+        .pin                = GPIO_PIN_15,
+        .func               = GPIO_FUNC_50,
+    },
+    .can_tx_cfg         = {
+        .en_ptb_single_shot = CAN_PTB_SINGLESHOT_TX_ENABLE,
+        .en_stb_single_shot = CAN_STB_SINGLESHOT_TX_DISABLE,
+        .en_stb_prio_md     = CAN_STB_PRIO_MD_DISABLE,
+    },
+    .can_int_type       = (CAN_INT_RX | CAN_INT_RX_OVERRUN | CAN_INT_RX_BUF_FULL | CAN_INT_RX_BUF_WARN | CAN_INT_ERR_INT),
+    .can_int            = {
+        .can_int_irqn      = INT002_IRQn,
+        .can_int_pri       = DDL_IRQ_PRIO_07,
+        .can_int_callback  = can_module_irq_handler,
+    },
+};

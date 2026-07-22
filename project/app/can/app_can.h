@@ -59,9 +59,6 @@ void app_can_init(void);
 /** CAN 应用层主循环任务 (接收分发 + 定时发送) */
 void app_can_task(void);
 
-/** CAN 中断回调 (由 HAL 层在 ISR 中调用) */
-void app_can_int_callback(void);
-
 /** 设置电机发送使能 (0=禁止, 1=使能) */
 void app_can_set_tx_mgr(uint8_t motor_idx, uint8_t enable);
 
