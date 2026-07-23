@@ -87,8 +87,11 @@ __WEAKDEF void BSP_CLK_Init(void)
 #define LL_PERIPH_SEL       (LL_PERIPH_GPIO | LL_PERIPH_FCG | LL_PERIPH_PWC_CLK_RMU | LL_PERIPH_EFM | LL_PERIPH_SRAM)
 
 
+#define APP1_START_ADDR  0x0001A000UL
+
 extern void bsp_storage_test(void);
 int main(void) {
+    SCB->VTOR = APP1_START_ADDR;
 	
     LL_PERIPH_WE(LL_PERIPH_SEL);
     // Ó²¼þ³õÊ¼»¯...

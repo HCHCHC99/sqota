@@ -6,6 +6,12 @@
 
 #include "can_state.h"
 
+#if SYS_ENABLE_UDS
+#include "uds/uds_rx_entry.h"
+#include "uds/uds_ota.h"
+#include "uds/adapter_can.h"
+#endif
+
 
 //can模块使能
 #if SYS_ENABLE_CAN
@@ -148,6 +154,9 @@ void app_can_receive(void) {
                 data_process_8818(&rx_mess.data, rx_mess.len);
                 break;
             default:
+#if SYS_ENABLE_UDS
+                uds_rx_entry(rx_mess.can_id, rx_mess.data.rx_data, rx_mess.len);
+#endif
                 return;  // 未知 ID，不发布
         }
         // 每次成功处理后发布最新状态
@@ -348,6 +357,11 @@ void can_clr_cmd(uint8_t motor_idx)
 void app_can_init(void)
 {
 	can_module_init(&can_handle,&CAN_HW);
+
+#if SYS_ENABLE_UDS
+	CanIf_Init(&can_handle);
+	UdsOta_Init();
+#endif
 	
 	//根据配置信息对报文进行使能
 	
@@ -363,6 +377,9 @@ void app_can_task(void)
 	app_can_transmit();
 	//状态发布app_can_receive接收到数据再发布
 	can_evt_publish(&s_can_msg);
+#if SYS_ENABLE_UDS
+	UdsOta_Poll();
+#endif
 }
 
 #endif

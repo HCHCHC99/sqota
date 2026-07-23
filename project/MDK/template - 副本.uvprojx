@@ -578,6 +578,51 @@
               <FileType>1</FileType>
               <FilePath>..\app\system.c</FilePath>
             </File>
+            <File>
+              <FileName>adapter_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\adapter_can.c</FilePath>
+            </File>
+            <File>
+              <FileName>bootloader_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\bootloader_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash_download.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\flash_download.c</FilePath>
+            </File>
+            <File>
+              <FileName>isotp_transport.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\isotp_transport.c</FilePath>
+            </File>
+            <File>
+              <FileName>security_access.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\security_access.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_diagnostic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_diagnostic.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_dl_bridge.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_dl_bridge.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_ota.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_ota.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_rx_entry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_rx_entry.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1568,6 +1613,51 @@
               <FileName>system.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\app\system.c</FilePath>
+            </File>
+            <File>
+              <FileName>adapter_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\adapter_can.c</FilePath>
+            </File>
+            <File>
+              <FileName>bootloader_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\bootloader_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash_download.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\flash_download.c</FilePath>
+            </File>
+            <File>
+              <FileName>isotp_transport.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\isotp_transport.c</FilePath>
+            </File>
+            <File>
+              <FileName>security_access.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\security_access.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_diagnostic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_diagnostic.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_dl_bridge.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_dl_bridge.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_ota.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_ota.c</FilePath>
+            </File>
+            <File>
+              <FileName>uds_rx_entry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\app\can\uds\uds_rx_entry.c</FilePath>
             </File>
           </Files>
         </Group>
