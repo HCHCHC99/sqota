@@ -123,7 +123,7 @@ int main(void) {
 	    uint32_t now = SysTick_GetTick();
         Sys_Schedule_Run();  // 调度器运行
 #if SYS_ENABLE_UDS
-        UdsOta_Poll();       // Phase 1: 延迟复位倒计时 + UDS 超时 + FlashDownload + CAN 轮询
+        UdsOta_Poll();       // Phase 1：暂时关闭
 #endif
 //        bsp_storage_test();
 //			  LOG_INFO("Sys_Schedule_Run");

@@ -91,6 +91,7 @@ static void CanIf_EchoCallback(const CanMsg_t *pMsg);
  */
 static void CanIf_TxCompleteCallback(void)
 {
+    
     CanMsg_t stcMsg;
     can_frame_t stcFrame;
     bool bHasFrame = false;
@@ -358,23 +359,21 @@ bool CanIf_Send(const CanMsg_t *pMsg)
  */
 void CanIf_Poll(void)
 {
-    stc_can_rx_frame_t stcRxFrame;
-    CanMsg_t stcMsg;
+    
+    
     
     if (!m_bInitialized) {
         return;
     }
     
-    /* ========== 1. ��������֡ ========== */
-    while (can_read(&m_pCanHandle->can_rx, &stcRxFrame) == CAN_RET_OK) {
-        CanIf_ConvertFromCanFrame(&stcRxFrame, &stcMsg);
-        CanIf_DispatchRx(&stcMsg);
-    }
+    CanMsg_t stcMsg;
+
+    /* RX dispatch removed: body CAN + UDS both go through app_can_receive() */
     
-    /* ========== 2. Bus-Off���ͻָ� ========== */
+    /* ========== 1. Bus-Off���ͻָ� ========== */
     CanIf_CheckBusOff();
     
-    /* ========== 3. ��ȫ��: ���TX���е����зǿգ��ֶ��������� ========== */
+    /* ========== 2. ��ȫ��: ���TX���е����зǿգ��ֶ��������� ========== */
     /* ��ֹ�жϻص���ĳЩ��Ե�������© */
     if (!can_is_tx_busy() && (m_u8TxHead != m_u8TxTail)) {
         CanIf_TxCompleteCallback();
