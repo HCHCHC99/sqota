@@ -96,7 +96,7 @@ __WEAKDEF void BSP_CLK_Init(void)
 extern void bsp_storage_test(void);
 int main(void) {
     SCB->VTOR = APP1_START_ADDR;
-	
+		MAIN_D("===== main(): app1 =====\r\n");
     LL_PERIPH_WE(LL_PERIPH_SEL);
     // Ӳ����ʼ��...
 
@@ -119,6 +119,7 @@ int main(void) {
     LL_PERIPH_WP(LL_PERIPH_SEL);
 
     while (1) {
+			SWDT_FeedDog();
 	    uint32_t now = SysTick_GetTick();
         Sys_Schedule_Run();  // 调度器运行
 #if SYS_ENABLE_UDS

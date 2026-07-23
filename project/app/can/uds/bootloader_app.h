@@ -1,9 +1,10 @@
-﻿/**
- * @file    bootloader_app.h
- * @brief   Minimal UDS shared state for APP-only context
- */
 #ifndef __BOOTLOADER_APP_H__
 #define __BOOTLOADER_APP_H__
+
+/* ====== UDS Debug Printing (J-Link RTT Viewer) ====== */
+#define UDS_DEBUG       1   // uds_diagnostic: UDS_D/I/W/E
+#define ISO_DEBUG       1   // isotp_transport: ISOTP_D/I/W/E
+/* CANIF_D, FW_D, DL_D are always-on, no #ifdef gate */
 
 #include "hc32_ll.h"
 #include <stdint.h>

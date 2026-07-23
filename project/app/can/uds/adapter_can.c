@@ -8,17 +8,17 @@
 #include "adapter_can.h"
 #include "can_module.h"
 #include "sys_tick.h"
-#include "log_rtt.h"
+#include "rtt_log.h"
 #include <string.h>
 #include <stdlib.h>
 
 /*==============================================================================
  * ���Ժ�
  *============================================================================*/
-#define CANIF_D(fmt, ...)  LOG_DEBUG("[CANIF]", fmt, ##__VA_ARGS__)
-#define CANIF_I(fmt, ...)  LOG_INFO("[CANIF]", fmt, ##__VA_ARGS__)
-#define CANIF_W(fmt, ...)  LOG_WARN("[CANIF]", fmt, ##__VA_ARGS__)
-#define CANIF_E(fmt, ...)  LOG_ERROR("[CANIF]", fmt, ##__VA_ARGS__)
+#define CANIF_D(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_DEBUG, COLOR_CYAN,   "CANIF", fmt, ##__VA_ARGS__)
+#define CANIF_I(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_INFO,  COLOR_GREEN, "CANIF", fmt, ##__VA_ARGS__)
+#define CANIF_W(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_WARN,  COLOR_YELLOW,"CANIF", fmt, ##__VA_ARGS__)
+#define CANIF_E(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_ERROR, COLOR_RED,   "CANIF", fmt, ##__VA_ARGS__)
 
 /*==============================================================================
  * ���ض���

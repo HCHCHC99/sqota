@@ -8,14 +8,14 @@
 *****************************************************************************/
 #include "uds_dl_if.h"
 #include "flash_download.h"
-#include "log_rtt.h"
+#include "rtt_log.h"
 #include <string.h>
 
 /*****************************调试宏定义***************************************/
-#define DL_D(fmt, ...)  LOG_DEBUG("[DL]", fmt, ##__VA_ARGS__)
-#define DL_I(fmt, ...)  LOG_INFO("[DL]", fmt, ##__VA_ARGS__)
-#define DL_W(fmt, ...)  LOG_WARN("[DL]", fmt, ##__VA_ARGS__)
-#define DL_E(fmt, ...)  LOG_ERROR("[DL]", fmt, ##__VA_ARGS__)
+#define DL_D(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_DEBUG, COLOR_CYAN,   "DL", fmt, ##__VA_ARGS__)
+#define DL_I(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_INFO,  COLOR_GREEN, "DL", fmt, ##__VA_ARGS__)
+#define DL_W(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_WARN,  COLOR_YELLOW,"DL", fmt, ##__VA_ARGS__)
+#define DL_E(fmt, ...)  LOG_CH(LOG_CH_MAIN, LOG_LEVEL_ERROR, COLOR_RED,   "DL", fmt, ##__VA_ARGS__)
 
 /*****************************私有变量***************************************/
 static const uds_dl_if_t* g_dl_iface = NULL;

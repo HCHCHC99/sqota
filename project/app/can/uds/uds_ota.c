@@ -11,7 +11,7 @@
 #include "isotp_transport.h"
 #include "uds_diagnostic.h"
 #include "flash_download.h"
-#include "log_rtt.h"
+#include "rtt_log.h"
 #include "sys_tick.h"
 #include "bootloader_app.h"
 #include "bootloader_app.h"
@@ -68,11 +68,11 @@ static void ISOTP_RegisterRxFilters(void)
     for (uint8_t i = 0U; i < 4U; i++) {
         stcEntry.u32CanId = s_isotp_can_ids[i];
         if (!CanIf_RegisterRxFilter(&stcEntry)) {
-            LOG_INFO("ISOTP: failed to register RX filter for CAN ID 0x%08X\r\n",
+            MAIN_D("ISOTP: failed to register RX filter for CAN ID 0x%08X\r\n",
                    s_isotp_can_ids[i]);
         }
     }
-    LOG_INFO("ISOTP: 4 CAN ID RX filters registered\r\n");
+    MAIN_D("ISOTP: 4 CAN ID RX filters registered\r\n");
 }
 
 /***************************** 公开接口实现 *******************************/
@@ -80,7 +80,7 @@ static void ISOTP_RegisterRxFilters(void)
 /* 初始化 UDS/CAN/ISOTP 栈 */
 void UdsOta_Init(void)
 {
-    LOG_INFO("=== UDS Stack Init Start ===\r\n");
+    MAIN_D("=== UDS Stack Init Start ===\r\n");
 
     isotp_init(0);
     ISOTP_RegisterRxFilters();
@@ -88,7 +88,7 @@ void UdsOta_Init(void)
     uds_dl_init_fw();
     uds_init();
 
-    LOG_INFO("=== UDS Stack Init Done ===\r\n");
+    MAIN_D("=== UDS Stack Init Done ===\r\n");
 }
 
 /* 主循环轮询 */
@@ -105,7 +105,7 @@ void UdsOta_Poll(void)
         if (g_delayed_reset_ms > 0) {
             g_delayed_reset_ms--;
             if (g_delayed_reset_ms == 0) {
-                LOG_INFO("Delayed reset done, resetting...\r\n");
+                MAIN_D("Delayed reset done, resetting...\r\n");
                 NVIC_SystemReset();
                 while(1);
             }

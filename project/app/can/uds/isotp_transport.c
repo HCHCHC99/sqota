@@ -7,8 +7,10 @@
 *******************************************/
 #include "isotp_transport.h"
 #include "can_adapter.h"
-#include "log_rtt.h"
+#include "rtt_log.h"
 #include <string.h>
+
+
 /***************************** 静态变量 ***********************************/
 
 /* 静态接收缓冲区 (8KB) */

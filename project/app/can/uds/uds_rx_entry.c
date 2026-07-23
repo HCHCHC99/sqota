@@ -1,4 +1,4 @@
-﻿#include "uds_rx_entry.h"
+#include "uds_rx_entry.h"
 #include "isotp_transport.h"
 #include "uds_diagnostic.h"
 #include <stdbool.h>
