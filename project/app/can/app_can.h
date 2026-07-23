@@ -17,6 +17,9 @@
 
 #include "can_protocol.h"
 
+/* 全局 CAN 句柄，供 UDS 适配层引用 */
+extern can_handle_t can_handle;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

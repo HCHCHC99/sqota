@@ -24,6 +24,10 @@
 
 #include "log_rtt.h"
 
+#if SYS_ENABLE_UDS
+#include "../app/can/uds/uds_ota.h"
+#endif
+
 /**
  * @brief  BSP clock initialize.
  *         Set board system clock to MPLL@200MHz
@@ -87,36 +91,46 @@ __WEAKDEF void BSP_CLK_Init(void)
 #define LL_PERIPH_SEL       (LL_PERIPH_GPIO | LL_PERIPH_FCG | LL_PERIPH_PWC_CLK_RMU | LL_PERIPH_EFM | LL_PERIPH_SRAM)
 
 
+#define APP1_START_ADDR  0x0001A000UL
+
 extern void bsp_storage_test(void);
 int main(void) {
+    SCB->VTOR = APP1_START_ADDR;
 	
     LL_PERIPH_WE(LL_PERIPH_SEL);
-    // Ӳ����ʼ��...
+    // Ӳ����ʼ��...
 
     BSP_CLK_Init();
 
-    // 1. ��ʼ�� SysTick������ 1ms �жϣ�1000Hz��
+    // 1. ��ʼ�� SysTick������ 1ms �жϣ�1000Hz��
     SysTick_Init(1000U);
 
-    // 2. ��ȫ���жϣ����룡��
+    // 2. ��ȫ���жϣ����룡��
     __enable_irq();
 	
 
-    System_Init();  // ϵͳ��ʼ��
+    System_Init();  // 系统初始化（含 CAN 硬件初始化）
 
-    //    Test_RunAll();  // ִ�����в���
+#if SYS_ENABLE_UDS
+    UdsOta_App_CheckPendingAck();  // Phase 3: 检查并补发 UDS 挂起响应
+#endif
+
+    //    Test_RunAll();  // ִ�����в���
     LL_PERIPH_WP(LL_PERIPH_SEL);
 
     while (1) {
 	    uint32_t now = SysTick_GetTick();
-        Sys_Schedule_Run();  // ����������
+        Sys_Schedule_Run();  // 调度器运行
+#if SYS_ENABLE_UDS
+        UdsOta_Poll();       // Phase 1: 延迟复位倒计时 + UDS 超时 + FlashDownload + CAN 轮询
+#endif
 //        bsp_storage_test();
 //			  LOG_INFO("Sys_Schedule_Run");
 //			  DDL_DelayMS(200);
     }
 }
 
-// 1ms ��ʱ���жϷ�����
+// 1ms ��ʱ���жϷ�����
 void Timer1ms_IRQHandler(void) {
 //    SysTick_Inc();
 }
@@ -124,9 +138,9 @@ void Timer1ms_IRQHandler(void) {
 
 
 /**
- * @brief SysTick �жϷ�����
+ * @brief SysTick �жϷ�����
  */
 void SysTick_Handler(void)
 {
-    SysTick_IncTick();  // �ٷ����ṩ��ÿ���ж� +1ms
+    SysTick_IncTick();  // �ٷ����ṩ��ÿ���ж� +1ms
 }
