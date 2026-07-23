@@ -4,6 +4,7 @@
 /* ====== UDS Debug Printing (J-Link RTT Viewer) ====== */
 #define UDS_DEBUG       1   // uds_diagnostic: UDS_D/I/W/E
 #define ISO_DEBUG       1   // isotp_transport: ISOTP_D/I/W/E
+#define OTA_DEBUG       1   // isotp_transport: OTA_D/I/W/E (CAN ID frame-level prints)
 /* CANIF_D, FW_D, DL_D are always-on, no #ifdef gate */
 
 #include "hc32_ll.h"
