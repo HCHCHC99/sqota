@@ -61,7 +61,7 @@ void System_RegisterDefaultModules(void)
     Sys_Scheduler_RegisterModule(&power_module);
 #endif
 
-
+/*
     // 数据存储
 #if SYS_ENABLE_STORAGE
     SysModule_t storage_module = SYS_MODULE_REGISTER(
@@ -70,7 +70,7 @@ void System_RegisterDefaultModules(void)
     );
     Sys_Scheduler_RegisterModule(&storage_module);
 #endif
-
+*/
     // CAN通信模块
 #if SYS_ENABLE_CAN
     SysModule_t can_module = SYS_MODULE_REGISTER(
