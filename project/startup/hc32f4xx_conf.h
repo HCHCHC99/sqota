@@ -47,7 +47,7 @@ extern "C"
  * Library.
  * @note LL_PRINT_ENABLE must be turned on(DDL_ON) if using printf function.
  */
-#define LL_ICG_ENABLE                               (DDL_ON)
+#define LL_ICG_ENABLE                               (DDL_OFF)
 #define LL_UTILITY_ENABLE                           (DDL_ON)
 #define LL_PRINT_ENABLE                             (DDL_ON)
 
