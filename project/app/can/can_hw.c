@@ -41,7 +41,7 @@ const can_cfg_t CAN_HW = {
         .en_stb_single_shot = CAN_STB_SINGLESHOT_TX_DISABLE,
         .en_stb_prio_md     = CAN_STB_PRIO_MD_DISABLE,
     },
-    .can_int_type       = (CAN_INT_RX | CAN_INT_RX_OVERRUN | CAN_INT_RX_BUF_FULL | CAN_INT_RX_BUF_WARN | CAN_INT_ERR_INT),  // 去除 CAN_INT_PTB_TX 嫌疑②测试
+    .can_int_type       = (CAN_INT_RX | CAN_INT_RX_OVERRUN | CAN_INT_RX_BUF_FULL | CAN_INT_RX_BUF_WARN | CAN_INT_ERR_INT | CAN_INT_PTB_TX),  // 去除 CAN_INT_PTB_TX 嫌疑②测试
     .can_int            = {
         .can_int_irqn      = INT002_IRQn,
         .can_int_pri       = DDL_IRQ_PRIO_07,
