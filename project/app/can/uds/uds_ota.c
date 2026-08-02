@@ -97,10 +97,11 @@ void UdsOta_Poll(void)
 {
     static uint64_t s_last_ms_tick = 0;
     uint64_t current_tick = SysTick_GetTick();
-    /* 阶段2: 强制OTA指令 → 软件复位进入 bootloader（由 boot 50ms 窗口再次确认） */
-    if (g_force_ota_cmd == BOOT_FORCE_CMD_ENTER_BL) {
+    /* 阶段2/3: 强制OTA指令 → 软件复位进入 bootloader（0x01/0x02/0x03 均由 boot 的 50ms 窗口处理） */
+    if (g_force_ota_cmd != 0U) {
+        uint8_t u8ForceCmd = g_force_ota_cmd;
         g_force_ota_cmd = 0U;
-        MAIN_D("Force OTA cmd (0x18FF5858) in APP, resetting to bootloader...\r\n");
+        MAIN_D("Force OTA cmd 0x18FF5858 = 0x%02X, resetting to bootloader...\r\n", (unsigned int)u8ForceCmd);
         NVIC_SystemReset();
         while (1) { }
     }
