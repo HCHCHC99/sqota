@@ -82,7 +82,7 @@ static FlashDownloadResult_t write_buf(uint32_t addr, const uint8_t* buf, uint32
 
 void FlashDownload_Init(const FlashDownloadConfig_t* cfg) {
     memset(&g_ctx, 0, sizeof(g_ctx));
-    g_ctx.config.max_firmware_size = 256*1024; g_ctx.config.flash_sector_size = 0x2000;
+    g_ctx.config.max_firmware_size = FW_APP_MAX_SIZE; g_ctx.config.flash_sector_size = 0x2000;
     g_ctx.config.user_start_addr = FW_APP_START_ADDR;
     g_ctx.config.user_end_addr = FW_APP_START_ADDR + FW_APP_MAX_SIZE - 1;
     g_ctx.config.verify_enabled = 1;
@@ -104,6 +104,10 @@ FlashDownloadResult_t FlashDownload_OnRequestDownload(uint32_t addr, uint32_t si
     }
     if (size > g_ctx.config.max_firmware_size || !size) {
         FW_E("Size invalid: %d", size); return FW_RESULT_SIZE_TOO_LARGE;
+    }
+    if (m + size > FW_APP_START_ADDR + FW_APP_MAX_SIZE) {
+        FW_E("Range invalid: 0x%08X + %d exceeds APP2 window", m, size);
+        return FW_RESULT_ADDR_INVALID;
     }
     FlashDownloadResult_t r = erase_range(m, m + size - 1);
     if (r != FW_RESULT_OK) return r;
@@ -131,7 +135,6 @@ FlashDownloadResult_t FlashDownload_OnTransferData(uint8_t seq, uint8_t* data, u
     for (uint16_t i = 0; i < len; i++) g_ctx.rx_crc = crc32_byte(g_ctx.rx_crc, data[i]);
     g_ctx.received_size += len; g_ctx.expected_sequence++;
     FW_D("Block %d: %d bytes, total=%d/%d", seq, len, g_ctx.received_size, g_ctx.total_size);
-    g_ctx.pending_response = true;
     return FW_RESULT_OK;
 }
 

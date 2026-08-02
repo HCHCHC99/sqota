@@ -376,9 +376,6 @@ void app_can_task(void)
 	app_can_transmit();
 	//状态发布app_can_receive接收到数据再发布
 	can_evt_publish(&s_can_msg);
-#if SYS_ENABLE_UDS
-	UdsOta_Poll();
-#endif
 }
 
 #endif

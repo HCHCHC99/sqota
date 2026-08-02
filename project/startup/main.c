@@ -1,4 +1,4 @@
-#include "sys_init.h"
+﻿#include "sys_init.h"
 #include "sys_sched.h"
 #include "sys_tick.h"
 //#include "test/test_main.h"
@@ -123,7 +123,7 @@ int main(void) {
 	    uint32_t now = SysTick_GetTick();
         Sys_Schedule_Run();  // 调度器运行
 #if SYS_ENABLE_UDS
-        UdsOta_Poll();       // Phase 1：暂时关闭
+        UdsOta_Poll();
 #endif
 //        bsp_storage_test();
 //			  LOG_INFO("Sys_Schedule_Run");
