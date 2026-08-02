@@ -23,6 +23,7 @@ extern void uds_dl_init_fw(void);
 
 /* 延迟复位倒计时：UDS handler 设为 DELAYED_RESET_MS，Poll 中逐 ms 递减 */
 volatile uint32_t g_delayed_reset_ms = 0;
+volatile uint8_t  g_force_ota_cmd = 0;
 
 /***************************** 静态变量 ***********************************/
 
@@ -96,6 +97,13 @@ void UdsOta_Poll(void)
 {
     static uint64_t s_last_ms_tick = 0;
     uint64_t current_tick = SysTick_GetTick();
+    /* 阶段2: 强制OTA指令 → 软件复位进入 bootloader（由 boot 50ms 窗口再次确认） */
+    if (g_force_ota_cmd == BOOT_FORCE_CMD_ENTER_BL) {
+        g_force_ota_cmd = 0U;
+        MAIN_D("Force OTA cmd (0x18FF5858) in APP, resetting to bootloader...\r\n");
+        NVIC_SystemReset();
+        while (1) { }
+    }
 
     /* 1ms 门控 */
     if (current_tick != s_last_ms_tick) {

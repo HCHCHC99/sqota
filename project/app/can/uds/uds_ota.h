@@ -15,6 +15,7 @@
 
 /* 延迟复位倒计时 (ms)，UDS handler 设置为 DELAYED_RESET_MS，UdsOta_Poll 中倒计时 */
 extern volatile uint32_t g_delayed_reset_ms;
+extern volatile uint8_t  g_force_ota_cmd;
 
 /***************************** 公开接口 ***********************************/
 
