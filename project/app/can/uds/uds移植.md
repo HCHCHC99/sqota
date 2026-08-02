@@ -103,9 +103,9 @@ common.h                ← 公共头
 | 文件 | 改动 |
 |------|------|
 | `app/can/can_hw.c` | `.can_int_type` 加 `CAN_INT_PTB_TX`（TX 完成中断使能） |
-| `app/can/app_can.c` | `app_can_init` 加 `CanIf_Init(&can_handle)` + `UdsOta_Init()`；`default:` 加 `uds_rx_entry()`；`app_can_task` 加 `UdsOta_Poll()` |
+| `app/can/app_can.c` | `app_can_init` 加 `CanIf_Init(&can_handle)` + `UdsOta_Init()`；`default:` 加 `uds_rx_entry()`；`app_can_task` 原加 `UdsOta_Poll()`（**2026-08-02 已删除**，仅 main 调用） |
 | `app/can/app_can.h` | 加 `extern can_handle_t can_handle`（供 UDS 适配层引用） |
-| `startup/main.c` | 加 `SCB->VTOR = APP1_START_ADDR`、`UdsOta_App_CheckPendingAck()`、`while(1)` 中 `UdsOta_Poll()` |
+| `startup/main.c` | 加 `UdsOta_App_CheckPendingAck()`、`while(1)` 中 `UdsOta_Poll()`；注：`SCB->VTOR` 不在 main.c，由 `system_hc32f460.c` 的 `VECT_TAB_OFFSET=0x1A000` 在 `SystemInit()` 中自动设置 |
 | `config/sys_config.h` | 加 `#define SYS_ENABLE_UDS 1` |
 | `MDK/startup_hc32f460.s` | Stack `0x2000→0x9000`（36KB），Heap `0x2000→0x4000`（16KB） |
 
@@ -131,18 +131,22 @@ common.h                ← 公共头
 ## 六、main.c 启动流程
 
 ```
+复位后（startup → SystemInit，自动执行）:
+  SCB->VTOR = VECT_TAB_OFFSET = 0x1A000   ← OTA 对齐（system_hc32f460.c 定义）
+
 main():
-  SCB->VTOR = APP1_START_ADDR            ← OTA 对齐
+  MAIN_D("===== main(): app1 =====")
   LL_PERIPH_WE(...)
-  BSP_CLK_Init()                         ← 四驱硬件时钟
+  BSP_CLK_Init()                         ← 四驱硬件时钟（MPLL 200MHz）
   SysTick_Init(1000U)                    ← 1ms 时基
   __enable_irq()
   System_Init()                          ← 内含 app_can_init → CanIf_Init + UdsOta_Init
   UdsOta_App_CheckPendingAck()           ← Phase 3: 补发 51 01 ACK（读 0x10000 扇区）
   LL_PERIPH_WP(...)
   while(1):
-    Sys_Schedule_Run()                   ← 内含 app_can_task → UdsOta_Poll
-    UdsOta_Poll()                        ← Phase 1: 延迟复位倒计时（直接调用）
+    SWDT_FeedDog()
+    Sys_Schedule_Run()                   ← 调度器（app_can_task：收/发/发布）
+    UdsOta_Poll()                        ← Phase 1: 延迟复位倒计时 + ISOTP/UDS/CAN 轮询（2026-08-02 起仅此处调用）
 ```
 
 ---
@@ -155,7 +159,7 @@ main():
 | **Phase 2** | Bootloader | 读到 `phase==1` | 补发 31 ACK → UDS 下载（`10 02` → `27` → `34` → `36×N` → `37`）→ 写 `phase=2, result=1` → 等 `0x11` → 复位 |
 | **Phase 3** | APP（重新启动） | 读到 `pending_sid==0x11` | 发送 `51 01` ACK → 擦除 `0x10000` → OTA 完成 |
 
-> **注意**：四驱控制器目前没有 bootloader，Phase 2 不适用。Phase 1 的复位后如果进入 bootloader（由 bootloader 的 `Boot_StartupSequence` 判断），需要 bootloader 存在才能走完完整流程。
+> **注意**：四驱控制器本身不编译 bootloader，Phase 2 由 **OTA 工程的 boot** 完成（烧录在 `0x0`）。2026-08-02 已实测 **Phase 1 → 2 → 3 全链路通过**。
 
 ---
 
@@ -163,11 +167,12 @@ main():
 
 | 地址 | 大小 | 用途 |
 |------|------|------|
-| `0x00000000` | 128KB | Bootloader（预留，当前未实现） |
+| `0x00000000` | 48KB（0~0xC000） | Bootloader（使用 **OTA 工程的 boot**，镜像实测 46.55KB） |
 | `0x00010000` | 8KB | **UDS 共享状态**（`stc_uds_shared_t`，56字节） |
-| `0x0001A000` | ~196KB | APP1（当前固件） |
-| `0x0004C000` | ~196KB | APP2（OTA 下载目标） |
-| `0x0007C000` | 8KB | 参数存储（`drv_mcu_flash.c` 使用） |
+| `0x0001A000` | 80KB（0x1A000~0x2DFFF） | APP1（当前固件，2026-08-02 由 200KB 调整为 80KB） |
+| `0x0004C000` | 80KB（0x4C000~0x5FFFF） | APP2（OTA 下载目标，同上调整为 80KB） |
+| `0x0006E000` | 8KB | 参数存储（`drv_mcu_flash.c` 的 `STORAGE_SECTOR_ADDR`，**APP 自有系统**） |
+| `0x0007C000` | 8KB | **Bootloader 跳转槽 `APP_RUN_SLOT`**（OTA boot 使用，勿占用） |
 
 ---
 
@@ -285,3 +290,51 @@ app/can/
                 ├─ 是 → 总线上没有 CAN 帧，或 CAN 硬件过滤器丢弃了帧
                 └─ 否 → 帧被 switch-case 中某个 case 匹配走了（检查 can_id）
 ```
+---
+
+## 十三、移植实测结果（2026-08-02 通过 ✅）
+
+四驱控制盒工程 OTA 全链路实测通过：
+
+```
+APP(四驱)                        OTA Boot(0x0)                       APP(四驱)
+  │ 10 03 → 27 → 31                │                                 │
+  │ 写共享区 phase=1, pending=0x31  │                                 │
+  │ 延迟 100ms → NVIC_SystemReset ──→│ Boot_StartupSequence 读 phase==1│
+  │                                 │ → Bootloader_UdsMain (Phase 2)  │
+  │                                 │ 补发 31 ACK → 下载 80KB → 0x11  │
+  │                                 │ 写 pending_sid=0x11 → 复位 ────→│
+  │                                 │                                 │ App_CheckPendingUdsAck → 51 01 (Phase 3)
+  │                                 │                                 │ UdsShared_Clear → OTA 完成
+```
+
+要点：
+- 四驱工程**不编译 bootloader**，Phase 2 直接使用 **OTA 工程（merge_v.1.0.0）的 boot**，烧录在 `0x0`；
+- Phase 1 由四驱 APP 完成（0x31 handler → 共享区 → 延迟复位）；
+- Phase 3 由四驱 APP 启动时补发 `51 01`；
+- OTA boot 的 `UDS_POST_FLASH_BOOT_ADDR = APP1_START_ADDR`，升级完成后始终跳回 APP1。
+
+## 十四、移植后修复记录（2026-08-02）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| 1 | `0x36/0x37` 永远回 `7F xx 78`（pending），不回 `76/77` | 删除 `flash_download.c` `FlashDownload_OnTransferData()` 末尾的 `g_ctx.pending_response = true;`（OTA 工程本来就没有这一行，属于移植引入） |
+| 2 | `UdsOta_Poll()` 在 main 和 `app_can_task` 中被重复调用 | 删除 `app_can.c` `app_can_task()` 中的调用，仅保留 main 循环一处 |
+| 3 | Phase 1 的 PB6 闪烁会操作**电机2下管 PWM 引脚**（`pwm_hw.c` CH_M2_LV = PB6），导致过流故障、主循环被卡住、延迟复位无法执行 | 删除 `uds_diagnostic.c` 0x31 handler 中的 PB6 闪烁块；OTA 工程 boot/app1/app2 的 Phase 1/2/3 闪烁和 `ShowBootStatus()` 一并删除 |
+| 4 | APP2 下载窗口 48KB 过小；`max_firmware_size` 默认 256KB 可能越界擦除参数区/跳转槽 | `flash_download.h`：`FW_APP_MAX_SIZE=0x14000`(80KB)、`TBOX_ADDR_END=0x08018000`；`flash_download.c`：`max_firmware_size = FW_APP_MAX_SIZE`，并新增 `m+size` 越界检查 |
+| 5 | main.c 过期注释“Phase 1：暂时关闭”与代码不符 | 删除注释 |
+| 6 | OTA 工程 app1 的 31 ACK 用 raw CAN，与 boot 的 ISOTP 不一致 | app1 改为与 boot 一致（`isotp_send_message`） |
+| 7 | OTA 工程 boot/app1/app2 下载上限仍为 48KB（`Bootloader_App.c` 的 `max_firmware_size`/`user_end_addr`、`flash_download.h` 的 `FW_APP_MAX_SIZE`/`TBOX_ADDR_END`） | 全部同步为 80KB |
+
+## 十五、RTT 调试提示
+
+- 四驱时基：`SysTick_Init(1000U)` → `SysTick_Handler` → `SysTick_IncTick`，`SysTick_GetTick()` 返回 uint32_t（ms）；
+- 烧录后“不进 debug 看不到 RTT 打印”通常是 **RTT Viewer 连接侧**问题：连接模式/`ForceGo`、RTT 控制块地址（四驱 `_SEGGER_RTT` ≈ `0x1FFFC340`，OTA ≈ `0x1FFF8A94`）、ELF 文件路径是否指向当前工程；
+- `MAIN_D("===== main(): app1 =====")` 是 APP 第一条打印，可用来确认程序是否真的在跑。
+
+## 十六、注意事项
+
+- `0x31` 例程控制的 RID 由 TBOX 定义（实测为 `0x01FE`），handler 不校验 RID，只要安全解锁即可触发 Phase 1；
+- 四驱 APP 链接地址必须为 `0x1A000`（Keil IROM1 Start），尺寸上限 `0x14000`（80KB）；
+- 参数存储 `0x6E000`（扇区 55）是 **APP 自有系统**（`drv_mcu_flash.c`），`0x7C000`（扇区 62）是 **bootloader 跳转槽**，两者都不可被 OTA 下载区（APP2: `0x4C000~0x5FFFF`）覆盖；
+- 四驱 `flash_download` 使用 EFM 直写（无 FlashAdvanced 层），OTA 工程 boot 内仍使用 FlashAdvanced。
