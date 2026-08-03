@@ -10,16 +10,12 @@
 #include "hc32_ll.h"
 #include <stdint.h>
 #include <string.h>
+#include "memory_map.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define APP1_START_ADDR           0x0001A000UL
-#define APP2_START_ADDR           0x0004C000UL
-#define APP_RUN_SLOT_ADDR         0x0007C000UL
-#define UDS_SHARED_SECTOR_BASE    0x00010000UL
-#define UDS_SHARED_MAGIC          0x55445300UL
 #define UDS_TARGET_FLASH_ADDR     APP2_START_ADDR
 #define UDS_POST_FLASH_BOOT_ADDR  APP1_START_ADDR
 #define DELAYED_RESET_MS          100U

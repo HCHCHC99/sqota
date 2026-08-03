@@ -133,7 +133,12 @@ FlashDownloadResult_t FlashDownload_OnTransferData(uint8_t seq, uint8_t* data, u
     FlashDownloadResult_t r = write_buf(g_ctx.target_address + g_ctx.received_size, data, len);
     if (r != FW_RESULT_OK) { g_ctx.last_error = r; set_state(FW_UPDATE_ERROR); return r; }
     for (uint16_t i = 0; i < len; i++) g_ctx.rx_crc = crc32_byte(g_ctx.rx_crc, data[i]);
-    g_ctx.received_size += len; g_ctx.expected_sequence++;
+    g_ctx.received_size += len;
+    if (g_ctx.expected_sequence == 0xFF) {
+        g_ctx.expected_sequence = 0x01;   // 255 -> 1, follow TBOX wrap
+    } else {
+        g_ctx.expected_sequence++;
+    }
     FW_D("Block %d: %d bytes, total=%d/%d", seq, len, g_ctx.received_size, g_ctx.total_size);
     return FW_RESULT_OK;
 }

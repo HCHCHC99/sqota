@@ -3,10 +3,8 @@
 #include "hc32_ll.h"
 #include "hc32_ll_efm.h"
 #include "main.h"
+#include "memory_map.h"
 
-#define FLASH_SECTOR_SIZE        8192U
-#define STORAGE_SECTOR_ADDR      0x6E000UL
-#define STORAGE_MAGIC            0x5AA55AA5UL
 
 /* ==================== 私有方法实现 ==================== */
 static void flash_unlock(flash_t *self);
