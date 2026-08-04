@@ -36,12 +36,13 @@
 #define FW_APP_MAX_SIZE             APP_MAX_SIZE
 #define FW_BOOTLOADER_START_ADDR    0x00000000UL
 
-/* ========== TBOX 地址窗口（APP2 窗口，168KB，与 OTA 工程一致） ========== */
-#define TBOX_ADDR_START             0x08042000UL
-#define TBOX_ADDR_END               0x0806C000UL
+/* ========== TBOX 槽位标签（客户协议固定，仅表示烧录到哪个槽） ========== */
+#define TBOX_ADDR_APP1              0x08018000UL    /* 标签：烧录到 APP1（0x1A000） */
+#define TBOX_ADDR_APP2              0x08004000UL    /* 标签：烧录到 APP2（0x44000） */
+
 #define MAP_TBOX_ADDR_TO_FLASH(addr) \
-    (((addr) >= TBOX_ADDR_START && (addr) < TBOX_ADDR_END) ? \
-     ((addr) - TBOX_ADDR_START + FW_APP_START_ADDR) : (addr))
+    (((addr) == TBOX_ADDR_APP1) ? APP1_START_ADDR : \
+     ((addr) == TBOX_ADDR_APP2) ? APP2_START_ADDR : (addr))
 
 /* ========== OTA 限制 ========== */
 #define FW_MAX_FIRMWARE_SIZE        APP_MAX_SIZE    /* 固件最大 = APP 分区大小 = 168KB */
