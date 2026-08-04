@@ -1,0 +1,1 @@
+#ifndef __SYS_SCHED_H#define __SYS_SCHED_H#include "sys_config.h"#include "sys_module.h"#if SYS_ENABLE_SCHEDULER// 调度器初始化void Sys_Scheduler_Init(void);// 调度器主循环void Sys_Schedule_Run(void);// 注册单个模块uint8_t Sys_Scheduler_RegisterModule(const SysModule_t* module);#endif#endif

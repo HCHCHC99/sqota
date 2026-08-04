@@ -1,0 +1,1 @@
+#include "hal_timer.h"#include "sys_tick.h"#if HAL_ENABLE_TIMER// extern void Hw_Timer_Init(void);void Hal_Timer_Init(void){    // Hw_Timer_Init();}// 底层1ms中断调用此函数void Hal_Timer_1msCallback(void){    // mySysTick_Inc();}#endif
