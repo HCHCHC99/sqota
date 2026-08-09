@@ -26,6 +26,12 @@ extern "C" {
 #define BOOT_FORCE_CMD_BOOT_APP1         0x01U
 #define BOOT_FORCE_CMD_WINDOW_MS         50U
 
+/* 测试用：0x18FF5555 停止/恢复喂 SWDT（验证 boot RMU 故障计数），回帧 0x18EF5555 */
+#define BOOT_TEST_STOP_WDT_CAN_ID       0x18FF5555UL
+#define BOOT_TEST_STOP_WDT_RESP_CAN_ID  0x18EF5555UL
+#define BOOT_TEST_STOP_WDT_CMD          0x01U   /* 停止喂狗 */
+#define BOOT_TEST_RESUME_WDT_CMD        0x00U   /* 恢复喂狗 */
+
 typedef enum { UDS_PHASE_IDLE=0, UDS_PHASE_ENTER_BOOTLOADER=1, UDS_PHASE_PROGRAMMING_DONE=2 } en_uds_phase_t;
 
 typedef struct {

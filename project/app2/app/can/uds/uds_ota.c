@@ -24,6 +24,7 @@ extern void uds_dl_init_fw(void);
 /* 延迟复位倒计时：UDS handler 设为 DELAYED_RESET_MS，Poll 中逐 ms 递减 */
 volatile uint32_t g_delayed_reset_ms = 0;
 volatile uint8_t  g_force_ota_cmd = 0;
+volatile uint8_t  g_swdt_feed_disable = 0;
 
 /***************************** 静态变量 ***********************************/
 
