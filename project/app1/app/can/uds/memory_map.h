@@ -47,8 +47,8 @@
 #define FW_BOOTLOADER_START_ADDR    0x00000000UL    /* [Phase2无关] 同上 */
 
 /* ========== TBOX 槽位标签（客户协议固定，仅表示烧录到哪个槽） ========== */
-#define TBOX_ADDR_APP1              0x08018000UL    /* 标签：烧录到 APP1（0x1A000）；[Phase2无关] 实际映射由 boot 执行 */
-#define TBOX_ADDR_APP2              0x08004000UL    /* 标签：烧录到 APP2（0x44000）；[Phase2无关] 实际映射由 boot 执行 */
+#define TBOX_ADDR_APP1              0x88010000UL    /* 标签：烧录到 APP1（0x1A000）；[Phase2无关] 实际映射由 boot 执行 */
+#define TBOX_ADDR_APP2              0x48000000UL    /* 标签：烧录到 APP2（0x44000）；[Phase2无关] 实际映射由 boot 执行 */
 
 /* [Phase2无关] 四驱 APP 的 flash_download 不参与实际 OTA，地址映射由 boot 执行 */
 #define MAP_TBOX_ADDR_TO_FLASH(addr) \
